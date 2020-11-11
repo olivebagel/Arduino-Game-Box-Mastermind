@@ -1,0 +1,878 @@
+#include "LedControl.h"
+#include "LiquidCrystal.h"
+#include "IRremote.h"
+LedControl lc=LedControl(4,5,6,1);
+LiquidCrystal lcd(7, 8, 9, 10, 11, 12);
+int receiver = 3; // Signal Pin of IR receiver to Arduino Digital Pin 6
+unsigned long delaytime1=500;
+unsigned long delaytime2=10;
+unsigned long delaytime3=2000;
+int d1;
+int d2;
+int x1;
+int x2;
+int x3;
+int x4;
+int y1;
+int y2;
+int y3;
+int y4;
+int shapeid;
+int pos;
+int shapematrix[11][4];
+int shapeid_out;
+int pos_out;
+int rnd;
+int guessnum;
+int soln;
+int dummy;
+int feedback[10][4];
+int guess_omit[10][4];
+int solution_omit[10][4];
+int check;
+int GreenLed=13;
+int BlueLed=2;
+int query;
+int all_wrong;
+int y;
+int cheat;
+int prev_check_1[4];
+int prev_check_2[4];
+int prev;
+
+IRrecv irrecv(receiver);    // create instance of 'irrecv'
+decode_results results;     // create instance of 'decode_results'
+
+
+void lose_animation(){
+  lc.clearDisplay(0);
+  lc.setLed(0,2,5,true);
+  lc.setLed(0,3,5,true);
+  lc.setLed(0,4,5,true);
+  lc.setLed(0,5,5,true);
+  lc.setLed(0,1,6,true);
+  lc.setLed(0,6,6,true);
+
+  for (int i=1;i<4;i++){
+    lc.setLed(0,2,i,true);
+    lc.setLed(0,5,i,true);
+  }
+}
+
+void spiral(){
+lc.clearDisplay(0);
+for (int j=0;j<3;j++){
+  for (int i=j;i<8-j;i++){
+    lc.setLed(0,j-1,3-i+2*j-1,false);
+    lc.setLed(0,i,j,true);
+    lc.setLed(0,i-3,j,false);
+    delay(23);
+  }
+  for (int i=j;i<8-j;i++){
+    lc.setLed(0,i+4-2*j-1,j,false);
+    lc.setLed(0,7-j,i,true);
+    lc.setLed(0,7-j,i-3,false);
+    delay(23); 
+  }
+  for (int i=7-j;i>=j;i--){
+    lc.setLed(0,7-j,11-i-2*j-1,false);
+    lc.setLed(0,i,7-j,true);
+    lc.setLed(0,i+3,7-j,false);
+    delay(23); }
+  for (int i=7-j;i>=j+1;i--){
+    lc.setLed(0,i-4+2*j-1,7-j,false);
+    lc.setLed(0,j,i,true);
+    lc.setLed(0,j,i+3,false);
+    delay(23); }
+}
+ lc.clearDisplay(0); 
+}
+
+void wink(){
+
+  lc.clearDisplay(0);
+  lc.setLed(0,2,6,true);
+  lc.setLed(0,3,6,true);
+  lc.setLed(0,4,6,true);
+  lc.setLed(0,5,6,true);
+  lc.setLed(0,1,5,true);
+  lc.setLed(0,6,5,true);
+
+  for (int i=1;i<4;i++){
+    lc.setLed(0,2,i,true);
+    lc.setLed(0,5,i,true);
+  }
+    delay(1000);
+
+   for (int i=1;i<4;i++){
+     lc.setLed(0,2,i,false);
+   }
+   for (int i=1;i<4;i++){
+    lc.setLed(0,i,2,true);
+   }
+   delay(250);
+      for (int i=1;i<4;i++){
+    lc.setLed(0,i,2,false);
+   }
+   
+   for (int i=1;i<4;i++){
+     lc.setLed(0,2,i,true);
+   }
+   delay(1000);
+   lc.clearDisplay(0);
+  for (int i=0;i<4;i++){
+    shape(shapematrix[rnd][i],i);}
+  
+}
+
+
+void win_animation(){
+for (int i=0;i<3;i++){
+  lc.clearDisplay(0);
+  lc.setLed(0,3,3,true);
+  lc.setLed(0,3,4,true);
+  lc.setLed(0,4,3,true);
+  lc.setLed(0,4,4,true);
+  delay(100);
+  lc.clearDisplay(0);
+  for (int i=2;i<=5;i++){
+    lc.setLed(0,5,i,true);
+    lc.setLed(0,2,i,true);
+    lc.setLed(0,i,2,true);
+    lc.setLed(0,i,5,true);
+  }
+  delay(100);
+  lc.clearDisplay(0);
+  for (int i=1;i<=6;i++){
+    lc.setLed(0,6,i,true);
+    lc.setLed(0,1,i,true);
+    lc.setLed(0,i,1,true);
+    lc.setLed(0,i,6,true);
+  }
+  delay(100);
+  lc.clearDisplay(0);
+  for (int i=0;i<=7;i++){
+    lc.setLed(0,7,i,true);
+    lc.setLed(0,0,i,true);
+    lc.setLed(0,i,0,true);
+    lc.setLed(0,i,7,true);
+  }
+  delay(100);
+}
+  lc.clearDisplay(0);
+    for (int i=0;i<4;i++){
+      shape(shapematrix[rnd][i],i); }
+}
+
+void flashback(int y){
+    if (shapematrix[y][0]==0||shapematrix[y][1]==0||shapematrix[y][2]==0||shapematrix[y][3]==0){
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Not yet");
+    lcd.setCursor(0,1);
+    lcd.print("Entered");
+    delay(2000);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Enter Guess");
+    lcd.setCursor(0,1);
+    lcd.print("Number");
+    lcd.setCursor(7,1);
+    lcd.print(guessnum);
+  }else{
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Guess");
+    lcd.setCursor(0,1);
+    lcd.print("Number");
+    lcd.setCursor(7,1);
+    lcd.print(y+1);
+    
+    for (int i=0;i<4;i++){
+      shape(shapematrix[y][i],i);  
+    }
+    feedback_disp(y);
+    delay(3000);
+    for (int i=0;i<4;i++){
+      shape(shapematrix[rnd][i],i);  
+    }
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Enter Guess");
+    lcd.setCursor(0,1);
+    lcd.print("Number");
+    lcd.setCursor(7,1);
+    lcd.print(guessnum);
+  }
+}
+
+void feedback_disp(int query){
+  all_wrong=1;
+for (int j=3;j>0;j--){  
+  for (int i=0;i<4;i++){
+      if (feedback[query][i]==j){
+        if (j==3){
+         all_wrong=0;
+         digitalWrite(GreenLed, HIGH);
+         delay(300);
+         digitalWrite(GreenLed, LOW);
+         delay(300);
+          }else if(j==2){
+           all_wrong=0;
+           digitalWrite(BlueLed, HIGH);
+           delay(300);
+           digitalWrite(BlueLed, LOW);
+           delay(300);
+            }
+             }   
+              }
+}
+
+if (all_wrong==1){
+for (int i=0;i<10;i++){
+digitalWrite(BlueLed, HIGH);
+digitalWrite(GreenLed, HIGH);
+delay(100);
+digitalWrite(GreenLed, LOW);
+digitalWrite(BlueLed, LOW);
+delay(100);
+}
+  
+}
+
+}
+void translateIR() // takes action based on IR code received
+
+// describing Remote IR codes 
+{
+  switch(results.value)
+
+  {
+  case 0xFFA25D: Serial.println("POWER"); 
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Reseting...");
+  pos=0;
+  shapeid=0;
+  rnd=0;
+  guessnum=1;
+  cheat=0;
+
+  for (int i =0; i < 11; i++) {
+    for (int j =0; j < 4; j++) {
+    shapematrix[i][j] = 0;
+  }}
+  for (int i =0; i < 10; i++) {
+    for (int j =0; j < 4; j++) {
+    guess_omit[i][j] = 0;
+    solution_omit[i][j] = 0;
+    feedback[i][j] = 0;
+  }}  
+    for (int i=0;i<4;i++){
+    int rando_int = random(1,6);
+    shapematrix[10][i] = rando_int;
+  }
+  lc.clearDisplay(0);
+  delay(1000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Welcome to");
+  lcd.setCursor(0,1);
+  lcd.print("Mastermind");
+  delay(3000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter Guess");
+  lcd.setCursor(0,1);
+  lcd.print("Number");
+  lcd.setCursor(7,1);
+  lcd.print(guessnum);  
+  break;
+  
+  case 0xFFE21D: Serial.println("FUNC/STOP"); 
+
+  for (int i=0;i<4;i++){
+    shape(shapematrix[10][i],i);
+  }
+  cheat=1;
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Cheater...");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("I had zero");
+  lcd.setCursor(0,1);
+  lcd.print("expectations...");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("And you still");
+  lcd.setCursor(0,1);
+  lcd.print("let me down...");
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter Guess");
+  lcd.setCursor(0,1);
+  lcd.print("Number");
+  lcd.setCursor(7,1);
+  lcd.print(guessnum);   
+
+
+  for (int i=0;i<4;i++){
+    shape(shapematrix[rnd][i],i);
+  }
+  
+  
+  break;
+  case 0xFF629D: Serial.println("VOL+"); 
+     if (shapeid==6){
+       shapeid =  shapeid;
+  }else{
+      shapeid =  shapeid +1;}
+     break;
+  case 0xFF22DD: Serial.println("FAST BACK");
+       if (pos==0){
+       pos = pos;
+       }else{
+     pos = pos -1;
+     shapeid=shapematrix[rnd][pos];
+     }
+     break;
+  
+//oo weee its a big one. I'm checking a lot of shit, bear with me.   
+
+
+
+case 0xFF02FD: Serial.println("PAUSE");    
+
+soln=1;
+dummy=0;
+for (int i=0;i<4;i++){
+    if (shapematrix[rnd][i]!=shapematrix[10][i]){
+      soln=0;
+    }
+} 
+//launches the solution checker
+for (int i=0;i<4;i++){
+    feedback[rnd][i]=0;
+    if (shapematrix[rnd][i]==shapematrix[10][i]){
+      feedback[rnd][i]=3;
+      guess_omit[rnd][i]=1;
+      solution_omit[rnd][i]=1;
+    }
+  }
+  
+  for (int i=0;i<4;i++){
+    check=0;    
+    for (int j=0;j<4;j++){
+     if (shapematrix[rnd][i]==shapematrix[10][j]){
+     check=1;}
+    }    
+   if (check==0){
+      feedback[rnd][i]=1;
+      guess_omit[rnd][i]=1;}
+  }
+  //everything above here works, dont fuck with it
+  //below i am very tired, might be wrong 
+if (feedback[rnd][0]==0 || feedback[rnd][1]==0 || feedback[rnd][2]==0 || feedback[rnd][3]==0){
+    for (int i=0;i<4;i++){
+    check=0;    
+    for (int j=0;j<4;j++){
+     if (shapematrix[rnd][i]==shapematrix[10][j] && guess_omit[rnd][i]==0 && solution_omit[rnd][j]==0){
+     check=1;
+     guess_omit[rnd][i]=1;
+     solution_omit[rnd][j]=1;}
+    }    
+   if (check==1){
+      feedback[rnd][i]=2;
+      
+      }
+  }
+for (int i=0;i<4;i++){
+  if (feedback[rnd][i]==0){
+    feedback[rnd][i]=1;
+  }
+  }
+  } 
+//end of solution checker
+
+
+prev=0;
+for  (int i=0;i<rnd;i++){
+   for (int j=0;j<4;j++){
+      prev_check_1[j]=shapematrix[i][j];
+      prev_check_2[j]=shapematrix[rnd][j];
+      }
+      if (prev_check_1[0]==prev_check_2[0]&&prev_check_1[1]==prev_check_2[1]&&prev_check_1[2]==prev_check_2[2]&&prev_check_1[3]==prev_check_2[3]){
+        prev=1;
+      }
+}
+
+   Serial.print("checking");
+   Serial.print('\n'); 
+  for (int j=0;j<4;j++){
+    Serial.print(prev_check_1[j]);}
+    Serial.print('\n');
+  for (int j=0;j<4;j++){
+    Serial.print(prev_check_2[j]);}
+    Serial.print('\n');
+    Serial.print(prev);
+    Serial.print('\n');
+
+Serial.println("feedback");
+for (int i=0;i<10;i++){
+    for (int j=0;j<4;j++){
+    Serial.print(feedback[i][j]);}
+    Serial.print('\n');}
+    
+if (soln==1){
+  win_animation();
+  spiral();
+  wink();
+  if (cheat==1){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Dont cheat now");
+  lcd.setCursor(0,1);
+  lcd.print("Reset with PWR");
+  delay(5000);}
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("You have won!");
+  lcd.setCursor(0,1);
+  lcd.print("Reset with PWR");
+  }else if(shapematrix[rnd][0]!= 0  &&  shapematrix[rnd][1]!= 0  &&  shapematrix[rnd][2]!= 0  &&  shapematrix[rnd][3]!= 0 && prev==1){
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Already been");
+      lcd.setCursor(0,1);
+      lcd.print("guessed");
+      delay(2000);
+      lcd.clear();
+      lcd.setCursor(0,0);
+      lcd.print("Enter Guess");
+      lcd.setCursor(0,1);
+      lcd.print("Number");
+      lcd.setCursor(7,1);
+      lcd.print(guessnum); 
+    }else if(shapematrix[rnd][0]!= 0  &&  shapematrix[rnd][1]!= 0  &&  shapematrix[rnd][2]!= 0  &&  shapematrix[rnd][3]!= 0 && prev==0){
+    feedback_disp(rnd);
+    rnd = rnd+1;
+    pos=0;
+    shapeid=0;
+    guessnum=guessnum+1;
+    lc.clearDisplay(0);
+    lcd.clear();
+    lcd.setCursor(0,0);
+    lcd.print("Enter Guess");
+    lcd.setCursor(0,1);
+    lcd.print("Number");
+    lcd.setCursor(7,1);
+    lcd.print(guessnum);
+  }else{
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter all");
+  lcd.setCursor(0,1);
+  lcd.print("shapes dummy");
+  dummy=1;
+  delay(2000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter Guess");
+  lcd.setCursor(0,1);
+  lcd.print("Number");
+  lcd.setCursor(7,1);
+  lcd.print(guessnum);      
+  }
+  
+if (guessnum==11){
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("You lose!");
+  lose_animation();
+  delay(3000);
+  lcd.setCursor(0,1);
+  lcd.print("Solution -->");
+  lc.clearDisplay(0);
+  for (int i=0;i<4;i++){
+    shape(shapematrix[10][i],i);}
+  delay(3000);
+  lcd.setCursor(0,1);
+  lcd.print("Reset with PWR");
+  }
+
+  break;
+
+  case 0xFFC23D: Serial.println("FAST FORWARD");
+     if (pos==3){
+       pos = pos;
+       }else{
+     pos = pos +1;
+     shapeid=shapematrix[rnd][pos];
+     }
+     break;
+  case 0xFFE01F: Serial.println("DOWN");    break;
+  case 0xFFA857: Serial.println("VOL-");
+       if (shapeid==0){
+       shapeid = shapeid;
+       }else{
+     shapeid = shapeid -1;
+     }
+     break;
+  case 0xFF906F: Serial.println("UP");    break;
+  case 0xFF9867: Serial.println("EQ");    
+  win_animation();
+  spiral();
+  wink();
+  
+  
+  break;
+  case 0xFFB04F: Serial.println("ST/REPT");    break;
+  case 0xFF6897: Serial.println("0");    break;
+  case 0xFF30CF: Serial.println("1");    
+    flashback(0);
+  break;
+  case 0xFF18E7: Serial.println("2");    
+  flashback(1);
+  break;
+  case 0xFF7A85: Serial.println("3");    
+  flashback(2);
+  break;
+  case 0xFF10EF: Serial.println("4");    
+  flashback(3);
+  break;
+  case 0xFF38C7: Serial.println("5");    
+  flashback(4);
+  break;
+  case 0xFF5AA5: Serial.println("6");    
+  flashback(5);
+  break;
+  case 0xFF42BD: Serial.println("7");    
+  flashback(6);
+  break;
+  case 0xFF4AB5: Serial.println("8");    
+  flashback(7);
+  break;
+  case 0xFF52AD: Serial.println("9");    
+  flashback(8);
+  break;
+  case 0xFFFFFFFF: Serial.println(" REPEAT");break;  
+  default: 
+    Serial.println(" other button   ");
+
+  }// End Case
+
+  delay(250); // Do not get immediate repeat
+
+
+} //END translateIR
+
+void shape(int t,int quad){
+
+//the section below helps to establish the quadrant of the diplay you want to write to so the shape can now be called out in a single if instead of 4 each 
+  if (quad==0){
+    d1=4;
+    d2=0;}
+  if (quad==1){
+    d1=0;
+    d2=0;}
+  if (quad==2){
+    d1=4;
+    d2=4;}
+  if (quad==3){
+    d1=0;
+    d2=4;}
+x1=0+d1;
+x2=1+d1;
+x3=2+d1;
+x4=3+d1;
+y1=0+d2;
+y2=1+d2;
+y3=2+d2;
+y4=3+d2;
+
+//this section briefly clears the display so it is easier to see when it is updated. 
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,false);
+lc.setLed(0,x2,y2,false);
+lc.setLed(0,x2,y3,false);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,false);
+lc.setLed(0,x3,y2,false);
+lc.setLed(0,x3,y3,false);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false); 
+
+
+//this section writes the shapes
+//1 - square
+//2 - triangle
+//3 - plus
+//4 - dot
+//5 - vert
+//6 - slash
+
+//empty
+if (t==0){
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,false);
+lc.setLed(0,x2,y2,false);
+lc.setLed(0,x2,y3,false);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,false);
+lc.setLed(0,x3,y2,false);
+lc.setLed(0,x3,y3,false);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+//square
+if (t==1){
+lc.setLed(0,x1,y1,true);
+lc.setLed(0,x1,y2,true);
+lc.setLed(0,x1,y3,true);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,true);
+lc.setLed(0,x2,y2,false);
+lc.setLed(0,x2,y3,true);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,true);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,true);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+//triangle
+if (t==2){
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,true);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,false);
+lc.setLed(0,x2,y2,true);
+lc.setLed(0,x2,y3,true);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,true);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,true);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+//plus
+if (t==3){
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,true);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,true);
+lc.setLed(0,x2,y2,true);
+lc.setLed(0,x2,y3,true);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,false);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,false);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+
+//dot
+if (t==4){
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,false);
+lc.setLed(0,x2,y2,true);
+lc.setLed(0,x2,y3,true);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,false);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,true);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+//vert
+if (t==5){
+lc.setLed(0,x1,y1,false);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,true);
+lc.setLed(0,x2,y2,true);
+lc.setLed(0,x2,y3,true);
+lc.setLed(0,x2,y4,true);
+
+lc.setLed(0,x3,y1,true);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,true);
+lc.setLed(0,x3,y4,true);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,false);
+lc.setLed(0,x4,y4,false);   
+}
+
+//slash
+if (t==6){
+lc.setLed(0,x1,y1,true);
+lc.setLed(0,x1,y2,false);
+lc.setLed(0,x1,y3,false);
+lc.setLed(0,x1,y4,false);
+
+lc.setLed(0,x2,y1,true);
+lc.setLed(0,x2,y2,true);
+lc.setLed(0,x2,y3,false);
+lc.setLed(0,x2,y4,false);
+
+lc.setLed(0,x3,y1,false);
+lc.setLed(0,x3,y2,true);
+lc.setLed(0,x3,y3,true);
+lc.setLed(0,x3,y4,false);
+
+lc.setLed(0,x4,y1,false);
+lc.setLed(0,x4,y2,false);
+lc.setLed(0,x4,y3,true);
+lc.setLed(0,x4,y4,true);   
+}
+
+//end of shape function
+}
+
+void setup() {
+  /*
+   The MAX72XX is in power-saving mode on startup,
+   we have to do a wakeup call
+   */
+  pinMode(GreenLed, OUTPUT);
+  pinMode(BlueLed, OUTPUT);
+  digitalWrite(GreenLed, LOW);
+  digitalWrite(BlueLed, LOW);
+  digitalWrite(GreenLed, HIGH);
+  delay(500);
+  digitalWrite(BlueLed, HIGH);
+  delay(500);
+  digitalWrite(GreenLed, LOW);
+  delay(500);
+  digitalWrite(BlueLed, LOW);
+  delay(500);
+  lc.shutdown(0,false);
+  /* Set the brightness to a medium values */
+  lc.setIntensity(0,8);
+  /* and clear the display */
+  lc.clearDisplay(0);
+  // set up the LCD's number of columns and rows:
+  lcd.begin(15, 2);
+  // Print a message to the LCD.
+  lcd.clear();
+  delay(delaytime3);
+  guessnum=1;
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Welcome to");
+  lcd.setCursor(0,1);
+  lcd.print("Mastermind");
+  delay(3000);
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Press any");
+  lcd.setCursor(0,1);
+  lcd.print("Button");
+  Serial.begin(9600);
+  Serial.println("IR Receiver Button Decode"); 
+  irrecv.enableIRIn(); // Start the receiver
+  pos=0;
+  shapeid=0;
+  for (int i =0; i < 11; i++) {
+  for (int j =0; j < 4; j++) {
+    shapematrix[i][j] = 0;
+  }}
+  int rnd=1;
+  cheat=0;
+
+int ok=0;
+while (ok==0){
+  if (irrecv.decode(&results)) // have we received an IR signal?
+  { 
+    ok=1;
+    irrecv.resume(); // receive the next value  
+  }
+  
+  for (int i=0;i<4;i++){
+    int rando_int = random(1,6);
+    shapematrix[10][i] = rando_int;
+  }
+  delay(1);
+}
+  lcd.clear();
+  lcd.setCursor(0,0);
+  lcd.print("Enter Guess");
+  lcd.setCursor(0,1);
+  lcd.print("Number");
+  lcd.setCursor(7,1);
+  lcd.print(guessnum);
+}
+void loop() {  
+  if (irrecv.decode(&results)) // have we received an IR signal?
+  {
+    translateIR(); 
+    irrecv.resume(); // receive the next value
+shapematrix[rnd][pos]=shapeid;
+
+ //for (int i=0;i<11;i++){
+   //for (int j=0;j<4;j++){
+   //Serial.print(shapematrix[i][j]);}
+   //Serial.print('\n');}
+    shape(shapematrix[rnd][pos],pos);
+  }
+}
